@@ -1,2 +1,2 @@
-# xeaf-mds
-Message Delivery Server for XEAF
+# xeaf-notify
+Notification Service for XEAF

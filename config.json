@@ -1,0 +1,8 @@
+{
+    "settings": {
+        "port"   : 8181,
+        "senders": {
+            "xeaf-php": "fd5a4f7b-5c06-4057-8327-2fb425c70064"
+        }
+    }
+}
