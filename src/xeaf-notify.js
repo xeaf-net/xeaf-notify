@@ -5,17 +5,17 @@
  * @copyright XEAF.NET Group
  */
 
-const __XEAF_NOTIFY_VERSION__ = '1.0.0';
+const __XEAF_NOTIFY_VERSION__ = '1.0.1';
 
 /*
  * Load modules
  */
-const app     = require('express')();
-const config  = require('config.json');
-const server  = require('http').createServer(app);
-const io      = require('socket.io')(server);
-const redis   = require('redis');
-const body    = require('body-parser');
+const app    = require('express')();
+const config = require('config.json');
+const server = require('http').createServer(app);
+const io     = require('socket.io')(server);
+const redis  = require('redis');
+const body   = require('body-parser');
 
 /*
  * Entry point
@@ -87,6 +87,43 @@ X.app.get('/', function (req, res) {
         version: __XEAF_NOTIFY_VERSION__
     };
     res.send(info);
+});
+
+/*
+ * Login
+ */
+X.app.post('/login', function (req, res) {
+    let sender = req.query.sender;
+    if (sender !== undefined) {
+        if (X.config.senders.indexOf(sender) >= 0) {
+            let user = req.query.user;
+            let name = 'xns-' + req.query.session;
+            X.redis.set(name, user);
+            res.send({response: 'OK'});
+        } else {
+            res.send({response: 'Bad sender authorization key.'});
+        }
+    } else {
+        res.send({response: 'Could not find sender authorization key.'});
+    }
+});
+
+/*
+ * Logout
+ */
+X.app.post('/logout', function (req, res) {
+    let sender = req.query.sender;
+    if (sender !== undefined) {
+        if (X.config.senders.indexOf(sender) >= 0) {
+            let name = 'xns-' + req.query.session;
+            X.redis.del(name);
+            res.send({response: 'OK'});
+        } else {
+            res.send({response: 'Bad sender authorization key.'});
+        }
+    } else {
+        res.send({response: 'Could not find sender authorization key.'});
+    }
 });
 
 /*
