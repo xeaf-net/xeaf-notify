@@ -1,6 +1,6 @@
 {
     "name"        : "xeaf-notify",
-    "version"     : "1.0.0",
+    "version"     : "1.0.1",
     "private"     : false,
     "license"     : "Apache-2.0",
     "repository"  : {
@@ -21,10 +21,9 @@
         "node": ">= 6.9.x"
     },
     "scripts"     : {
-        "start": "node ./src/app.js"
+        "start": "node ./src/xeaf-notify.js"
     },
     "files"       : [
-        "lib/",
-        "app.js"
+        "src/"
     ]
 }
