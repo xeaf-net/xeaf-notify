@@ -5,7 +5,7 @@
  * @copyright XEAF.NET Group
  */
 
-const __XEAF_NOTIFY_VERSION__ = '1.0.1';
+const __XEAF_NOTIFY_VERSION__ = '1.0.2';
 
 /*
  * Load modules
@@ -20,14 +20,15 @@ const body   = require('body-parser');
 /*
  * Entry point
  */
-const X    = {};
-X.app      = app;
-X.config   = config();
-X.redis    = redis.createClient(X.config.redis.port, X.config.redis.host);
-X.io       = io;
-X.queue    = [];
-X.sessions = [];
-X.interval = null;
+const X      = {};
+X.app        = app;
+X.config     = config();
+X.redis      = redis.createClient(X.config.redis.port, X.config.redis.host);
+X.io         = io;
+X.queue      = [];
+X.sessions   = [];
+X.interval   = null;
+X.redisRenew = null;
 
 X.app.use(body.json());
 X.app.use(body.urlencoded({extended: true}));
@@ -66,8 +67,10 @@ io.use(((socket, next) => {
                 throw error;
             }
             if (result !== undefined && result !== null) {
-                socket.userId = result;
+                socket.sessionId = q.session;
+                socket.userId    = result;
                 X.sessions.push(socket);
+                X.redisRenew(q.session, result);
                 next();
             } else {
                 next(new Error('Bad session id.'));
@@ -96,9 +99,7 @@ X.app.post('/login', function (req, res) {
     let sender = req.query.sender;
     if (sender !== undefined) {
         if (X.config.senders.indexOf(sender) >= 0) {
-            let user = req.query.user;
-            let name = 'xns-' + req.query.session;
-            X.redis.set(name, user);
+            X.redisRenew(req.query.session, req.query.user);
             res.send({response: 'OK'});
         } else {
             res.send({response: 'Bad sender authorization key.'});
@@ -136,10 +137,10 @@ X.app.post('/notify', function (req, res) {
             // noinspection JSUnresolvedVariable
             for (let user of req.body.users) {
                 let message = {
-                    user : user,
-                    type : req.body.type,
-                    data : req.body.data,
-                    count: 0
+                    user     : user,
+                    type     : req.body.type,
+                    data     : req.body.data,
+                    timestamp: +new Date()
                 };
                 X.queue.push(message);
             }
@@ -160,17 +161,26 @@ X.interval = setInterval(function () {
         let list = [...X.queue];
         X.queue  = [];
         for (let message of list) {
-            message.count = message.count + 1;
-            if (message.count <= 5) {
+            let time = (+new Date()) - message.timestamp;
+            if (time < 1000 * X.config.deliver) {
                 let notification = {
-                    type: message.type,
-                    data: message.data
+                    type     : message.type,
+                    data     : message.data,
+                    timestamp: message.timestamp
                 };
                 X.sessions.forEach(function (socket) {
-                    if (socket.userId === message.user) {
+                    if (socket.userId === message.user && (message.socketId === undefined || message.socketId === socket.id)) {
                         socket.emit('_NOTIFICATION', notification, function (data) {
                             if (data !== 'OK') {
-                                X.queue.push(message);
+                                if (message.socketId === undefined) {
+                                    let copy      = Object.assign({}, message);
+                                    copy.socketId = socket.id;
+                                    X.queue.push(copy);
+                                } else {
+                                    X.queue.push(message);
+                                }
+                            } else {
+                                X.redisRenew(socket.sessionId, socket.userId);
                             }
                         })
                     }
@@ -179,3 +189,11 @@ X.interval = setInterval(function () {
         }
     }
 }, 1000);
+
+/**
+ * Renew Redis TTL for sessionId
+ */
+X.redisRenew = function (sessionId, userId) {
+    let name = 'xns-' + sessionId;
+    X.redis.set(name, userId, 'EX', X.config.redis.expired);
+};
