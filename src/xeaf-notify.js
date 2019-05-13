@@ -5,14 +5,21 @@
  * @copyright XEAF.NET Group
  */
 
-const __XEAF_NOTIFY_VERSION__ = '1.0.2';
+const __XEAF_NOTIFY_VERSION__ = '1.0.3';
 
 /*
  * Load modules
  */
+const fs     = require('fs');
 const app    = require('express')();
-const config = require('config.json');
-const server = require('http').createServer(app);
+const config = require('config.json')();
+const server = require('https').createServer({
+    key               : fs.readFileSync(config.ssl.key),
+    cert              : fs.readFileSync(config.ssl.cert),
+    ca                : fs.readFileSync(config.ssl.ca),
+    requestCert       : false,
+    rejectUnauthorized: false
+}, app);
 const io     = require('socket.io')(server);
 const redis  = require('redis');
 const body   = require('body-parser');
@@ -22,7 +29,7 @@ const body   = require('body-parser');
  */
 const X      = {};
 X.app        = app;
-X.config     = config();
+X.config     = config;
 X.redis      = redis.createClient(X.config.redis.port, X.config.redis.host);
 X.io         = io;
 X.queue      = [];
