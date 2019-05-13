@@ -10,9 +10,16 @@ const __XEAF_NOTIFY_VERSION__ = '1.0.2';
 /*
  * Load modules
  */
+const fs     = require('fs');
 const app    = require('express')();
 const config = require('config.json');
-const server = require('http').createServer(app);
+const server = require('http').createServer({
+    key               : fs.readFileSync('/etc/ssl/certs/dummy.key'),
+    cert              : fs.readFileSync('/etc/ssl/certs/dummy.crt'),
+    ca                : fs.readFileSync('/etc/ssl/certs/dummy_ca.crt'),
+    requestCert       : false,
+    rejectUnauthorized: false
+}, app);
 const io     = require('socket.io')(server);
 const redis  = require('redis');
 const body   = require('body-parser');
