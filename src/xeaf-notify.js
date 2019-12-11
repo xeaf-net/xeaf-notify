@@ -5,7 +5,7 @@
  * @copyright XEAF.NET Group
  */
 
-const __XEAF_NOTIFY_VERSION__ = '1.0.3';
+const __XEAF_NOTIFY_VERSION__ = '1.0.4';
 
 /*
  * Load modules
@@ -13,10 +13,10 @@ const __XEAF_NOTIFY_VERSION__ = '1.0.3';
 const fs     = require('fs');
 const app    = require('express')();
 const config = require('config.json')();
-const server = require('https').createServer({
-    key               : fs.readFileSync(config.ssl.key),
-    cert              : fs.readFileSync(config.ssl.cert),
-    ca                : fs.readFileSync(config.ssl.ca),
+const server = require(config.ssl.proto).createServer({
+    key               : config.ssl.proto === 'https' ? fs.readFileSync(config.ssl.key) : '',
+    cert              : config.ssl.proto === 'https' ? fs.readFileSync(config.ssl.cert) : '',
+    ca                : config.ssl.proto === 'https' ? fs.readFileSync(config.ssl.ca) : '',
     requestCert       : false,
     rejectUnauthorized: false
 }, app);
