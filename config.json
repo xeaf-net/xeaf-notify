@@ -1,9 +1,10 @@
 {
-    "port"   : 443,
+    "port"   : 8181,
     "ssl"    : {
-        "key" : "/etc/ssl/certs/xeaf/xeaf.net.multidomain.key",
-        "cert": "/etc/ssl/certs/xeaf/xeaf.net.multidomain.crt",
-        "ca"  : "/etc/ssl/certs/xeaf/xeaf.net.multidomain.ca-bundle.crt"
+        "proto": "http",
+        "key"  : "<if proto == https then full path to .key file>",
+        "cert" : "<if proto == https then full path to .crt file>",
+        "ca"   : "<if proto == https then full path to .ca-bundle.crt file>"
     },
     "redis"  : {
         "host"   : "127.0.0.1",

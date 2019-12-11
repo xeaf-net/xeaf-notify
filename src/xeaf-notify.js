@@ -1,22 +1,25 @@
 /**
  * XEAF Notification Service
  *
- * @author    Nick V. Anokhin <n.anokhin@xeaf.net>
- * @copyright XEAF.NET Group
+ * @author    Николай В. Анохин <n.anokhin@xeaf.net>
+ * @copyright 2019 XEAF.NET Group
  */
 
-const __XEAF_NOTIFY_VERSION__ = '1.0.3';
+/**
+ * Номер версии сервера
+ */
+const __XEAF_NOTIFY_VERSION__ = '1.0.4';
 
-/*
- * Load modules
+/**
+ * Загрузка модулей
  */
 const fs     = require('fs');
 const app    = require('express')();
 const config = require('config.json')();
-const server = require('https').createServer({
-    key               : fs.readFileSync(config.ssl.key),
-    cert              : fs.readFileSync(config.ssl.cert),
-    ca                : fs.readFileSync(config.ssl.ca),
+const server = require(config.ssl.proto).createServer({
+    key               : config.ssl.proto === 'https' ? fs.readFileSync(config.ssl.key) : '',
+    cert              : config.ssl.proto === 'https' ? fs.readFileSync(config.ssl.cert) : '',
+    ca                : config.ssl.proto === 'https' ? fs.readFileSync(config.ssl.ca) : '',
     requestCert       : false,
     rejectUnauthorized: false
 }, app);
@@ -36,6 +39,7 @@ X.queue      = [];
 X.sessions   = [];
 X.interval   = null;
 X.redisRenew = null;
+X.calcUserId = null;
 
 X.app.use(body.json());
 X.app.use(body.urlencoded({extended: true}));
@@ -62,8 +66,8 @@ X.io.on('connection', function (socket) {
     });
 });
 
-/*
- * Socket IO authorization
+/**
+ * Авторизация сессии Socket IO
  */
 io.use(((socket, next) => {
     let q = socket.handshake.query;
@@ -88,8 +92,8 @@ io.use(((socket, next) => {
     }
 }));
 
-/*
- * Home page
+/**
+ * Домашняя страница
  */
 X.app.get('/', function (req, res) {
     let info = {
@@ -99,14 +103,14 @@ X.app.get('/', function (req, res) {
     res.send(info);
 });
 
-/*
- * Login
+/**
+ * Авторизация сессии пользователя
  */
 X.app.post('/login', function (req, res) {
     let sender = req.query.sender;
     if (sender !== undefined) {
         if (X.config.senders.indexOf(sender) >= 0) {
-            X.redisRenew(req.query.session, req.query.user);
+            X.redisRenew(req.query.session, X.calcUserId(req.query.user, sender));
             res.send({response: 'OK'});
         } else {
             res.send({response: 'Bad sender authorization key.'});
@@ -116,8 +120,8 @@ X.app.post('/login', function (req, res) {
     }
 });
 
-/*
- * Logout
+/**
+ * Завершение сессии пользователя
  */
 X.app.post('/logout', function (req, res) {
     let sender = req.query.sender;
@@ -134,17 +138,16 @@ X.app.post('/logout', function (req, res) {
     }
 });
 
-/*
- * Notify
+/**
+ * Нотификация группы пользователей
  */
 X.app.post('/notify', function (req, res) {
     let sender = req.query.sender;
     if (sender !== undefined) {
         if (X.config.senders.indexOf(sender) >= 0) {
-            // noinspection JSUnresolvedVariable
-            for (let user of req.body.users) {
+            for (let user of req.body['users']) {
                 let message = {
-                    user     : user,
+                    user     : X.calcUserId(user, sender),
                     type     : req.body.type,
                     data     : req.body.data,
                     timestamp: +new Date()
@@ -160,8 +163,8 @@ X.app.post('/notify', function (req, res) {
     }
 });
 
-/*
- * Sender
+/**
+ * Отправка сообщений из сформированной очереди
  */
 X.interval = setInterval(function () {
     if (X.queue.length > 0) {
@@ -176,7 +179,7 @@ X.interval = setInterval(function () {
                     timestamp: message.timestamp
                 };
                 X.sessions.forEach(function (socket) {
-                    if (socket.userId === message.user && (message.socketId === undefined || message.socketId === socket.id)) {
+                    if ((socket.userId.indexOf(message.user) >= 0) && (message.socketId === undefined || message.socketId === socket.id)) {
                         socket.emit('_NOTIFICATION', notification, function (data) {
                             if (data !== 'OK') {
                                 if (message.socketId === undefined) {
@@ -198,9 +201,26 @@ X.interval = setInterval(function () {
 }, 1000);
 
 /**
- * Renew Redis TTL for sessionId
+ * Обновляет значение TTL для сессии пользователя на сервере Redis
+ *
+ * @param sessionId Идентификатор сессии
+ * @param userId    Идентификатор пользователя
  */
 X.redisRenew = function (sessionId, userId) {
     let name = 'xns-' + sessionId;
     X.redis.set(name, userId, 'EX', X.config.redis.expired);
+};
+
+/**
+ * Вычисляет значение полного идентификатора пользователя
+ *
+ * @param userId Идентификатор пользователя
+ * @param sender Идентификато отправителя
+ *
+ * @return {string}
+ */
+X.calcUserId = function (userId, sender) {
+    return userId !== sender ?
+        userId + ':' + sender :
+        sender;
 };
