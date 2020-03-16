@@ -8,7 +8,7 @@
 /**
  * Номер версии сервера
  */
-const __XEAF_NOTIFY_VERSION__ = '1.0.4';
+const __XEAF_NOTIFY_VERSION__ = '1.0.5';
 
 /**
  * Загрузка модулей
