@@ -3,6 +3,7 @@
     "version"     : "1.0.4",
     "private"     : false,
     "license"     : "Apache-2.0",
+    "description" : "Сервер отправки нотификационных сообщений",
     "repository"  : {
         "type": "git",
         "url" : "https://github.com/xeaf-net/xeaf-notify.git"
