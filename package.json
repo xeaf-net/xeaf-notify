@@ -1,6 +1,6 @@
 {
     "name": "xeaf-notify",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "private": false,
     "license": "Apache-2.0",
     "description": "Сервер отправки нотификационных сообщений",
@@ -12,11 +12,11 @@
         "body-parser": "^1.19.0",
         "config.json": "0.0.x",
         "express": "^4.17.1",
-        "http": "^0.0.0",
-        "log4js": "^6.1.0",
-        "minimist": "^1.2.3",
-        "redis": "^2.8.0",
-        "socket.io": "^2.3.0",
+        "http": "^0.0.1-security",
+        "log4js": "^6.3.0",
+        "minimist": "^1.2.5",
+        "redis": "^3.1.2",
+        "socket.io": "^4.0.2",
         "ssl-root-cas": "^1.3.1"
     },
     "engines": {
