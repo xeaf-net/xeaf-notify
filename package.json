@@ -11,7 +11,7 @@
     "dependencies": {
         "body-parser": "^1.19.0",
         "config.json": "0.0.x",
-        "express": "^4.17.1",
+        "express": "^4.17.3",
         "http": "^0.0.1-security",
         "log4js": "^6.3.0",
         "minimist": "^1.2.5",
